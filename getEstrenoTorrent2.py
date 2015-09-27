@@ -80,18 +80,18 @@ def getPage(url):
             href = getURLTorrent("http://www.estrenotorrent.com"+entrada['href'])
             fecha = itemAlto[1].find('div',{'class':'createdate'}).getText()
             descripcion = itemAlto[1].find('div',{'class':'text'}).getText().replace('\t','').replace('\r','').replace('\n','')
-            print "%s|%s|%s|%s" %(titulo,href,fecha,descripcion)
+            print "%s|%s|%s|%s\n" %(titulo,href,fecha,descripcion)
             insertPeli(href,titulo,descripcion,fecha,0,0);
     else:
         print "Status Code %d" %statusCode
 
 # create table pelis (url VARCHAR(500),title VARCHAR(500),description VARCHAR(5000),fecha VARCHAR(12),type INTEGER,language INTEGER, PRIMARY KEY (url))
-# type: 0 - DivX
+# type: 0 - DivX, 1 - BlueRay Rip
 # language: 0 - Spanish
 def insertPeli(url,title,desc,fecha,type,lang):
     try:
         x = conn.cursor()
-        x.execute (" INSERT INTO pelis VALUES (%s,%s,%s,%s,0,0) ", (url,title,desc,fecha))
+        x.execute (" INSERT INTO pelis VALUES (%s,%s,%s,%s,1,0) ", (url,title,desc,fecha))
     except:
         print "Unexpected error:", sys.exc_info()[0]
 
@@ -99,9 +99,10 @@ def insertPeli(url,title,desc,fecha,type,lang):
 # Llega hasta 1090 de 10 en 10
 conn = MySQLdb.connect(host= "localhost",user="root",passwd="root",db="DB")
 
-for x in range(56, 109):
+for x in range(40, 60):
     # Ruta de la pagina web
-    url = 'http://www.estrenotorrent.com/tags/dvd%3Arip?start=' + str(x*10)
+    print "\n----> Tratando ------> %s\n" %(str(x))
+    url = 'http://www.estrenotorrent.com/tags/bluray-rip?start=' + str(x*10)
     getPage(url)
     conn.commit()
 

@@ -4,9 +4,10 @@ __author__ = 'ruben'
 # -*- coding: utf-8 -*-
 import urllib2, unicodedata
 from bs4 import BeautifulSoup
+import MySQLdb
+import sys
 
-
-def analisisDescarga(archivo, conexion):
+def analisisDescarga(conexion):
     html = conexion.read()
     soup = BeautifulSoup(html)
     # obtenemos una lista de String con la condicin de atributos class con valores details y price
@@ -17,39 +18,56 @@ def analisisDescarga(archivo, conexion):
     for tag in links:
         print("--")
         for linea in tag:
-            linea = linea.strip();
+            linea = linea.strip().replace('(DVDRip)','');
             print('linea: ' + linea)
             href = str(tag['href'])
             # adaptamos unicode a utf-8
             normalizado = unicodedata.normalize('NFKD', linea).encode('ascii', 'ignore')
-            archivo.write(normalizado + '|')
             # Obtenemos la URL de Descarga
             hrefS = href.split('/')
-            print('href: ' + hrefS[2])
-            archivo.write('http://www.elitetorrent.net/get-torrent/'+ hrefS[2] + '\n')
+            urlDest = 'http://www.elitetorrent.net/get-torrent/' + hrefS[2]
+            print('href: ' + urlDest)
+            insertPeli(urlDest,linea)
 
 # este metodo se conectara con la web y establece un timeout que obliga a reintentar el fallo
 # una vez descargada realiza el analisis
-def preparar(archivo, web, x):
+def preparar(web, x):
     try:
         print(web)
         conector = urllib2.urlopen(web, timeout=10)  # timeout de 10 segundos
-        analisisDescarga(archivo, conector)
+        analisisDescarga(conector)
     except:
         print("Tiempo de espera agotado, volviendo a intentar")
-        preparar(archivo, web, x)
+        preparar(web, x)
+
+
+# create table pelis (url VARCHAR(500),title VARCHAR(500),description VARCHAR(5000),fecha VARCHAR(12),type INTEGER,language INTEGER, PRIMARY KEY (url))
+# type: 0 - DivX, 1 - BlueRay Rip, 2 - DVD RIP
+# language: 0 - Spanish
+def insertPeli(url,title):
+    try:
+        x = conn.cursor()
+        x.execute (" INSERT INTO pelis VALUES (%s,%s,'','',2,0) ", (url,title))
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+
 
 # Programa principal
 print('Comienza el programa')
-archivo = open('peliculasTorrent.csv', 'a')
+conn = MySQLdb.connect(host= "localhost",user="root",passwd="root",db="DB")
 
 # El CSV separa las columnas por medio de tabuladores
-for x in range(1, 7):
+# http://www.elitetorrent.net/categoria/2/peliculas/pag:
+# http://www.elitetorrent.net/categoria/13/peliculas-hdrip/pag:
+# http://www.elitetorrent.net/categoria/17/peliculas-microhd/pag:
+# http://www.elitetorrent.net/categoria/4/series/pag:
+for x in range(1, 280):
     # Ruta de la pagina web
-    url = 'http://www.elitetorrent.net/categoria/17/peliculas-microhd/pag:' + str(x)
-    preparar(archivo, url, x)
+    print "\n----> Tratando ------> %s\n" %(str(x))
+    url = 'http://www.elitetorrent.net/categoria/4/series/pag:' + str(x)
+    preparar(url, x)
+    conn.commit()
 
-archivo.close()
 print('Fin del programa')
-
+conn.close()
 
