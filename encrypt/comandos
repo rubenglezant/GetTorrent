@@ -1,0 +1,10 @@
+If you still want to use openssl:
+
+Encryption:
+
+openssl aes-256-cbc -in attack-plan.txt -out message.enc
+
+Decryption:
+
+openssl aes-256-cbc -d -in message.enc -out plain-text.txt
+
